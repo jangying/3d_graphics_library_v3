@@ -1,0 +1,31 @@
+type material { int int int int int int }
+type bicubic {int int ptr [4][4][4]int ptr ptr}
+type bicubic_object {int ptr int ptr ptr}
+
+var material material {255 255 255 255 255 0 }
+var ptr texture data/rust.pic
+
+var bicubic bicubic_1
+{4 8 @texture
+ [
+  [[-30 -30 0 0]  [-40 -100 0 0]     [40 -100  0 0]    [30 -30 0 0]]
+  [[-100 -40 0 0] [-250 -250 -750 0] [250 -250 -250 0] [100 -40 0 0]]
+  [[-100  40 0 0] [-250  250 -250 0] [450  450 -450 0] [100  40 0 0]]
+  [[-30  30 0 0]  [-40  100 0 0]     [40  100  0 0]    [30  30 0 0]]
+ ]
+ 0 0
+}
+var bicubic bicubic_2
+{4 8 @texture
+ [
+  [[30  -30 0 0] [40 -100 0 0]    [-40 -100  0 0]  [-30 -30 0 0]]
+  [[100 -40 0 0] [750 -750 450 0] [-39 -39  140 0] [-100 -40 0 0]]
+  [[100  40 0 0] [39  39 140 0]   [-750 750 450 0] [-100  40 0 0]]
+  [[30   30 0 0] [40  100 0 0]    [-40  100  0 0]  [-30  30 0 0]]
+ ]
+ 0 0
+}
+var [2]ptr bicubics [bicubic_1 bicubic_2]
+var bicubic_object object {2 material 2 bicubics 0}
+
+export object

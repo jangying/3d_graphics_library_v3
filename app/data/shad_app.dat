@@ -1,0 +1,14 @@
+type light {int [4]int int int int}
+type group {int ptr ptr ptr int ptr}
+
+var [3]ptr objects [0 0 0]
+var [12]int centres [0 -150 600 0  0 0 600 0  0 150 600 0 ]
+var [12]byte orients [0 0 0 0  0 0 0 0  0 0 0 0 ]
+
+var light l1 {1 [0 0 0 0] 40 40 40}
+var light l2 {4 [0 0 127 0] 230 230 230}
+var [2]ptr lights [l1 l2]
+
+var group group {3 objects centres orients 2 lights}
+
+export group

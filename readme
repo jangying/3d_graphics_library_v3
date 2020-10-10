@@ -1,0 +1,484 @@
+3Dgpl 3D graphics library Version 3.0                 
+-------------------------------------
+Copyright (c) 1995-2000 Sergei Savchenko              
+Available under the terms of GNU Library General      
+Public License.
+
+
+Description
+-----------
+3Dgpl stands for 3D Graphics Portable Library. The library is 
+written in C and it provides a set of basic tools for 3D graphics 
+applications and demonstrates the techniques that are commonly 
+used. Although it was written with educational goals in mind, and 
+clarity at times took precedence over performance, much of the 
+code can still be used for practical development. Please refer 
+to  "3D Graphics Programming: Games and Beyond" by Sergei Savchenko, 
+ISBN 0-672-31929-2, SAMS Publishing, 2000. for information about 
+algorithms and techniques used.
+
+The library is software only but highly portable. Interfaces for 
+MS-Windows and UNIX/X11 are provided with the current versions. 
+Porting to other hardware should be quite easy.
+
+3Dgpl implementation consists of 10 modules that provide 
+functionality for 3D applications at different levels of 
+abstraction, from low level (such as transformation and 
+rasterization) to high level (modeling schemes and hidden surface 
+removal algorithms). With a compact size of well under 10000 
+lines of code and a rich amount of comments, it should be quite 
+easy to understand the internals of the library and perhaps 
+readapt them for specific use.
+
+
+Legal
+-----
+3Dgpl is under the GNU Library General Public License. Please 
+refer to this license (which is included with the library) for 
+the terms and conditions of the library's distribution and use.
+
+
+Modules
+-------
+3Dgpl provides tools for both world-to-screen and screen-to-world 
+(ray-tracing) viewing.
+
+Most of the functions and modules described in this appendix are 
+used internally by other modules. Unless it was decided to modify 
+some of the internal functionality, a simple application may be 
+exposed to only the functions from the ENGINE or TRACE modules, 
+aided by a small number of initialization functions from other 
+modules. 
+
+The source code for each module of the library is placed 
+into a separate subdirectory of the /3DGPL hierarchy. Examine the 
+header files for additional information on the data structures 
+and functions used.
+
+The following sections briefly describe the modules.
+
+HARDWARE Module
+- - - - - - - -
+The HARDWARE module interfaces resources of a particular 
+operating system or hardware platform. The interface is fairly 
+minimal so porting to other platforms is quite easy. This has 
+been done before, and usually takes a day or less. The rest of 
+the library is mostly hardware independent and should compile and 
+work potentially anywhere. However, 32-bit platforms are strongly 
+recommended.
+
+There are two kinds of functions in this module. The functions of 
+the first kind interface the display device and the functions 
+from the second kind manage the control flow of the applications:
+
+HW_init_screen	             Opens graphical output.
+HW_pixel	             Packs a pixel from red/green/blue 
+                             components and stores the result at a 
+                             specified address.
+HW_blit	                     Moves a frame-buffer into display memory.
+HW_close_screen	             Closes graphics output.
+HW_init_event_loop           Runs rendering loop.
+HW_error	             Called by other modules when an error occurs.
+HW_close_event_loop	     Terminates main rendering loop.
+
+Thus, HW_init_event_loop must be passed pointers to three 
+functions. Of these three functions, one  implements event 
+handling, another implements drawing of a frame, and the third 
+implements processing that needs to be done when there are no 
+events to handle. The function HW_close_event_loop, when called 
+from either of the preceding three, causes HW_init_event_loop to 
+exit. Hardware and operating system particularities are hidden 
+within these functions and a 3Dgpl application need not to be 
+aware of which operating system it is running under.
+
+GRAPHICS Module
+- - - - - - - -
+The GRAPHICS module is responsible for rasterization of 
+primitives and, most importantly, it can handle flat, 
+interpolatively shaded, linearly textured, and perspectively 
+textured polygons. At this level, there is also a Z buffer, which 
+can be activated by compiling with _Z_BUFFER_ compile time option 
+defined as opposed to defining _PAINTER_. In the latter case, 
+hidden surface removal will rely upon painter's approach (see 
+Chapter 7 "Hidden Surface Removal") with various methods placing 
+the polygons into the back-to-front order implemented at the 
+level of the ENGINE module.
+
+The following list details other important functions this module provides.
+
+G_init_graphics	             Allocates the frame buffer and Z buffer.
+G_clear	                     Clears the frame buffer.
+G_point	                     Plots a point.
+G_line	                     Rasterizes a line.
+G_flat_polygon	             Rasterizes a flat polygon.
+G_shaded_polygon	     Rasterizes a Gouraud shaded polygon.
+G_lin_textured_polygon       Rasterizes a linearly textured polygon.
+G_prp_textured_polygon	     Rasterizes a perspectively textured polygon.
+G_init_graphics              Allocates the frame buffer and optionally the Z 
+                             buffer. It is automatically called by 
+                             HW_init_screen. 
+
+G_clear is used to clear the buffers prior to the frame drawing. The 
+remaining functions rasterize their respective primitives.
+
+CLIPPER Module
+- - - - - - - -
+The CLIPPER module performs volume clipping, clipping against 
+rectangular screen boundaries, and splitting of a polygon by an 
+arbitrary plane (which is used during the construction of BSP 
+trees, for instance). All of the functions use the binary search 
+technique and are multiplication-free. The following list details 
+the public functions available.
+
+C_init_clipping	             Sets 2D clipping boundaries.
+C_line_x_clipping            Clips a line against vertical edges.
+C_line_y_clipping            Clips a line against horizontal edges.
+C_polygon_x_clipping	     Clips a polygon against vertical edges.
+C_volume_clipping	     Approximates bounding box testing.
+C_line_z_clipping	     Clips a line against the frontal plane.
+C_polygon_z_clipping	     Clips a polygon against the front plane.
+C_line_xyz_clipping	     Clips a line against an arbitrary plane.
+C_polygon_xyz_clipping	     Clips a polygon against an arbitrary plane.
+
+The C_init_clipping function is used to specify the clipping 
+boundaries. It is automatically called by HW_init_screen to set 
+the default boundaries. The C_line_x_clipping and 
+C_line_y_clipping functions clip a line against vertical and 
+horizontal boundaries, respectively, and C_polygon_x_clipping 
+clips a polygon to vertical boundaries. The rasterization 
+routines first clip polygons to the vertical boundaries and will 
+perform horizontal clipping per edge, immediately prior to edge 
+scanning, to avoid creating useless horizontal edges in the 
+clipped polygon.
+
+The C_volume_clipping function does approximate accept/reject 
+tests against the viewing pyramid using the bounding box of a 
+primitive. The C_line_z_clipping and C_polygon_z_clipping 
+functions clip respective primitives against the frontal plane, 
+and the remaining two functions, C_line_xyz_clipping and 
+C_polygon_xyz_clipping, clip against arbitrarily oriented planes.
+
+TRANS Module
+- - - - - - -
+The TRANS module implements the geometric transformations and 
+some linear algebra algorithms, such as Gaussian elimination, 
+which is employed to find the coordinates of vectors used for 
+perspective texture mapping. The module is implemented using both 
+fixed-point (define _FIXED_ at compile time) or floating point 
+(define _FLOAT_ at compile time) precision. Depending on the 
+processor's type, one may be more advantageous to use over the 
+other. The following list details the important public functions 
+this module provides.
+
+T_init_math                  Builds internal tables of trigonometric 
+                             functions.
+T_vector	             Constructs a vector from endpoints.
+T_norm	                     Computes the length of a vector.
+T_normal_vectors	     Computes a normal from two vectors 
+                             in a plane.
+T_normal_plane	             Computes a normal from three points 
+                             in a plane.
+T_unit_vector	             Changes the length of the vector to 
+                             one unit.
+T_scalar_product	     Computes the scalar product.
+T_normal_z_negative	     Computes only the Z component of 
+                             the normal.
+T_plane	                     Computes plane equation.
+T_vertex_on_plane	     Finds position of a point with respect to 
+                             a plane.
+T_translation	             Performs the translation transformation.
+T_scaling	             Performs the scaling transformation.
+T_set_self_rotation	     Computes matrix for object space rotation.
+T_self_rotation	             Performs object space rotation.
+T_set_world_rotation	     Computes matrix for world space rotation.
+T_world_rotation	     Performs world space rotation.
+T_concatinate_self_world     Concatenates object and world rotations.
+T_concatinated_rotation	     Performs combined rotation.
+T_perspective	             Performs the perspective transformation.
+T_linear_solve	             Solves a system of linear equations.
+
+The rotation transformations for object and world rotations use a 
+different order of rotations around individual axes. The matrices 
+describing the two rotations can be concatenated together to 
+obtain a combined transformation from an object directly into the 
+view space.
+
+LIGHT Module
+- - - - - - -
+The LIGHT module computes local illumination for world-to-screen 
+applications. The functions listed in the following list are provided.
+
+L_init_lights	             Sets the list of light sources.
+L_init_material	             Specifies current material reflection 
+                             coefficients.
+L_light_vertex	             Computes local illumination for a point 
+                             given its position and the surface 
+                             normal at that point.
+
+The library maintains colors as intensities for pure components 
+of red, green, and blue. Palette-based modes that were 
+alternatively provided in early versions of 3Dgpl are no longer 
+supported.
+
+ENGINE Module
+- - - - - - -
+The ENGINE module provides modeling data structures and viewing 
+algorithms for several different objects. There are polygonal 
+objects[md]a collection of polygons that may be viewed with the 
+help of either Z buffer hidden surface removal activated in the 
+GRAPHICS module, or BSP tree-based painter's algorithm activated 
+in this module. The former switches on if the _Z_BUFFER_ compile-
+time option is set. The former will be activated on defining 
+_PAINTER_.
+
+The objects modeled as collections of bicubic patches are also 
+provided. These are tessellated into polygons just prior to 
+rasterization. Z buffer or polygonal sorting is used for hidden 
+surface removal.
+
+Another available object represents landscapes that are modeled 
+using a regularly spaced elevation field. Hidden surface removal 
+of the polygons composing the landscape is achieved either 
+through the Z buffer or priority list rasterization. The latter 
+(similarly to other objects) is activated on defining _PAINTER_.
+There are two functions (detailed in the following list) initializing 
+the viewing performed by the module.
+
+M_init_rendering             Specifies the polygon rasterization 
+                             option used.
+M_init_camera	             Sets the parameters of the viewing 
+                             camera.
+
+All of the objects are managed by three similar functions which, 
+in the case of bicubic objects, are detailed in the following list
+
+M_init_bicubic_object        Initializes an object.
+M_light_bicubic_object	     Illuminates an object with the help 
+                             of the LIGHT module.
+M_render_bicubic_object	     Renders an object.
+
+Since M_init_... functions compute additional information aiding 
+run-time rendering (normal vectors, for instance), the shape of 
+the models can't change unless M_init_... is called. 
+
+Initialization of polygonal objects with _PAINTER_ defined causes 
+computation of a BSP tree and thus isn't practical for actual 
+run-time. It should be done prior to launching the main event 
+loop of an application.
+
+Before rendering the objects, the parameters of the camera must 
+be specified in a call to M_init_camera. Coordinates of the 
+camera in the world space, its orientation angles, and the binary 
+logarithm of the perspective focus distance must be passed to 
+this function. Also, since all of the objects supported in the 
+library resort to using the polygonal pipeline at some point, 
+M_init_rendering should be called to select a rendering option of 
+the pipeline. The following options are available: M_POINT, 
+M_WIRE, M_FLAT, M_SHADED, M_TEXTURED.
+
+SHAPE Module
+- - - - - - -
+The SHAPE module helps to automatically build data structures of 
+polygonal models for simple shapes such as spheres and cylinders. 
+The three functions provided are detailed in the following list.
+
+S_init_shape                 Specifies material and texture to use for 
+                             subsequent model construction.
+S_sphere                     Builds a sphere.
+S_cylinder                   Builds a cylinder.
+
+The tessellation ratio could be specified for both spheres and 
+cylinders.
+
+VECTOR Module
+- - - - - - -
+The VECTOR module contains a set of basic vector operations to be 
+used by the ray-tracer. The provided functionality is similar to 
+that of the TRANS module, but is tailored for the purposes of 
+ray-tracing. Some of the available public functions are listed in 
+the following list.
+
+V_zero                       Assigns a zero to all coordinates.
+V_vector_coordinates         Sets vector coordinates.
+V_vector_points              Builds a vector from two points.
+V_set                        Copies a vector.
+V_multiply	             Multiplies a vector by a scalar.
+V_scalar_product	     Computes the scalar (dot) product of 
+                             vectors.
+V_vector_product             Computes the vector (cross) product 
+                             of vectors.
+V_sum                        Computes the sum of vectors.
+V_difference                 Computes the difference of vectors.
+V_unit_vector                Finds a unit length vector.
+V_plane                      Computes plane equation.
+V_vertex_on_plane            Finds the position of a point with 
+                             respect to a plane.
+
+Since speed concerns of the ray-tracing are already poor, only 
+floating point implementation is provided.
+
+TRACE Module
+- - - - - - -
+The TRACE module implements a fundamental ray-tracer, which 
+provides the very foundation for this rendering methodology 
+supporting three basic primitives: spheres, cylinders, and 
+polygons.
+
+Only four public functions are provided, as detailed in the 
+following list.
+
+TR_init_rendering            Sets local and global illumination 
+                             options.
+TR_init_camera	             Sets the parameters of the viewing 
+                             camera.
+TR_init_world	             Computes some auxiliary data aiding the 
+                             viewing.
+TR_trace_world	             Traces the scene.
+
+The viewer's camera is specified by the position of the eye, the 
+origin of the viewing plane, and two vectors describing the 
+orientation of the viewing plane.
+
+DATA Module
+- - - - - -
+The DATA module interprets script files reconstructing data 
+structures in memory. The syntax of the script is similar to that 
+used for defining static data in C. The following listing describes 
+(somewhat informally) the syntax:
+
+type ::= <char> | <short> | <int> | <float> | <ptr> |
+         <[>number<]>type | <{>type {type...}<}>
+variable ::= name | number | <[>variable {variable...}<]> |
+             <{>variable {variable...}<}>
+statement ::= <type> name type | <var> type name variable |
+              <export> name
+language ::= statement {statement...}
+
+All data structures used by sample applications (including the 
+textures) are represented in this portable format. The type 
+statement permits to describe the data structures, the var 
+statement describes the variables (instances of the data 
+structures), and the export statement specifies the pointer that 
+is returned to the calling application.
+
+There are several dangers associated with this module. It is 
+assumed that the data structure described in the application is 
+the same as that in the script file. If not properly maintained, 
+the structures may get desynchronized and crash the application. 
+The efficiency of storing extensive data in the text form (such 
+as textures) is also very low, from both the space and 
+performance viewpoints. However, such script language is quite 
+convenient, especially at the development stage when the data 
+structures may be changing all the time.
+
+
+Sample Applications
+-------------------
+The following list details the 10 sample applications provided in the 
+3DGPL3/APP subdirectory.
+
+window.c                     Constructs a window, draws random points.
+line.c                       Draws random lines.
+texture.c                    Draws a textured polygon that can be rotated 
+                             and viewed with different texturing options.
+polygon.c                    Draws a polygonal model that can be rotated 
+                             and viewed with different shading/texturing 
+                             options.
+bicubic.c                    Draws a bicubic model. The implemented 
+                             functionality is identical to polygon.c.
+surface.c                    Draws a landscape. The implemented 
+                             functionality is similar to polygon.c.
+inter.c	                     Demonstrates BSP tree-based hidden surface 
+                             removal on an interior scene (compile with 
+                             _PAINTER_, otherwise the Z buffer algorithm 
+                             will be used).
+group.c	                     Demonstrates workings of Z-buffer hidden 
+                             surface removal (compile with _Z_BUFFER_, 
+                             otherwise painter's approach will be used).
+shade.c	                     Draws a polygonal model approximating curved 
+                             objects (spheres and cylinders). Can be 
+                             viewed with different shading options.
+tracer.c	             A basic ray-tracer that displays a scene 
+                             under different local illumination, with or 
+                             without shadows and environmental 
+                             reflections.
+
+In a way, _PAINTER_ is a compile time option defining which 
+switches on the code of the painter's method. 
+
+All sample applications display a string indicating which key 
+presses are handled. Pressing <Enter> terminates all applications. 
+Many applications handle the arrow keys, which control the 
+orientation of the viewer or the model. For world-to-screen 
+applications, the following keys are responsible for 
+shading/texturing options:
+
+<P>                          Displays key vertices only.
+<W>                          Displays model's wire-frame.
+<F>                          Uses flat shading.
+<G>                          Uses Gouraud shading.
+<T>                          Uses Gouraud shading and texturing.
+
+Additionally, in texture.c it is possible to force the texturing 
+option using the following keys:
+
+<L>                          For linear texture mapping.
+<P>                          For perspective texture mapping.
+
+For the ray-tracing sample tracer.c, the following keys select 
+local and global illumination options:
+  
+<A>                          For ambient local illumination only.
+<D>                          For ambient and diffuse illumination.
+<S>                          Phong illumination (specular+diffuse+ambient).
+<H>                          Phong illumination and shadows.
+<R>                          Phong illumination, shadows, and environmental 
+                             reflections.
+
+The data files for the sample applications are stored in the 
+3DGPL3/APP/DATA subdirectory. All data files use the format 
+described in the DATA module.
+
+
+Compiling
+---------
+Two makefiles are provided:
+
+windows.mk                   Configured for MS Visual C++ V4 and above.
+unix.mk                      Configured for GCC, tested under Linux but 
+
+should work (perhaps with minor modifications) on other 
+UNIX machines as well.
+
+Note that compile-time options (_Z_BUFFER_ vs. _PAINTER_ and 
+_FLOAT_ vs. _FIXED_) are specified in the beginning of the 
+makefiles.
+
+To compile sample applications under MS-Windows with the help of 
+MS Visual C you will first have to ensure that the command line 
+tools are properly configured. This includes setting 
+environmental variables indicating where different parts of 
+Visual C are located. Visual C usually has a special batch file 
+vcvars32.bat running which initializes the setting. Once the 
+command line tools are configured, start a DOS box, go to the 
+3DGPL3/APP subdirectory, and issue the following command:
+
+nmake -f windows.mk NAME
+
+where NAME is the name of the sample applications. Alternatively
+
+nmake -f windows.mk all
+
+compiles all samples. 
+
+If you are using UNIX, go to the 3DGPL3/APP subdirectory and 
+issue the following command:
+
+make -f unix.mk NAME
+
+or
+
+make -f unix.mk all
+
+It may be necessary to alter the makefiles to correspond to your 
+particular setup.

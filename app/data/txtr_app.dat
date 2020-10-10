@@ -1,0 +1,24 @@
+type material { int int int int int int }
+type polygon { int int int int int ptr int ptr ptr }
+type object { int ptr ptr int ptr int ptr int ptr }
+
+var material material {255 255 255 255 255 255 }
+var [30]int p1_v [ 0  255 255 255   0   0
+                   1  255 255 255   0 127
+                   2  255 255 255 127 127
+                   3  255 255 255 127   0
+                   0  255 255 255   0   0 ]
+var polygon p1 { 0 255 255 255 7 data/buble.pic 4 p1_v 0 }
+
+var [16]int v
+[
+ -100 -100 0 0
+ -100  100 0 0
+  100  100 0 0
+  100 -100 0 0
+] 
+
+var [2]ptr ps [p1 p1]
+var object obj { 1 material 0 1 ps 4 v 0 0 }
+  
+export obj

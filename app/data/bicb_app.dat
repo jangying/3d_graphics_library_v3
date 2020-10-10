@@ -1,0 +1,10 @@
+type light {int [4]int int int int}
+type app {ptr ptr int}
+
+var light l1 {1 [0 0 0 0] 40 40 40}
+var light l2 {4 [0 0 127 0] 230 230 230}
+var [2]ptr lights [l1 l2]
+
+var app app { data/bicb_obj.dat lights 2 }
+
+export app

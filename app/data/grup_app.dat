@@ -1,0 +1,14 @@
+type light {int [4]int int int int}
+type group {int ptr ptr ptr int ptr}
+
+var [2]ptr objects [data/bicb_obj.dat data/poly_obj.dat]
+var [8]int centres [-50 -50 700 0  50 50 700 0]
+var [8]byte orients [14 48 14 0  54 54 0 0]
+
+var light l1 {1 [0 0 0 0] 40 40 40}
+var light l2 {4 [0 0 127 0] 230 230 230}
+var [2]ptr lights [l1 l2]
+
+var group group {2 objects centres orients 2 lights}
+
+export group
